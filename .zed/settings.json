@@ -1,0 +1,76 @@
+{
+  "terminal": {
+    "detect_venv": "off"
+  },
+  "lsp": {
+    "deno": {
+      "settings": {
+        "deno": {
+          "enable": true
+        }
+      }
+    },
+    "ty": {
+      "binary": {
+        "path": "uv",
+        "arguments": ["run", "ty", "server"]
+      }
+    }
+  },
+  "languages": {
+    "Python": {
+      "language_servers": ["!ty", "ruff", "pyright"],
+      "formatter": [
+        {
+          "language_server": {
+            "name": "ruff"
+          }
+        }
+      ]
+    },
+    "JavaScript": {
+      "language_servers": [
+        "deno",
+        "!typescript-language-server",
+        "!vtsls",
+        "!eslint"
+      ],
+      "formatter": "language_server"
+    },
+    "TypeScript": {
+      "language_servers": [
+        "deno",
+        "!typescript-language-server",
+        "!vtsls",
+        "!eslint"
+      ],
+      "formatter": "language_server"
+    },
+    "TSX": {
+      "language_servers": [
+        "deno",
+        "!typescript-language-server",
+        "!vtsls",
+        "!eslint"
+      ],
+      "formatter": "language_server"
+    },
+    "CSS": {
+      "formatter": {
+        "external": {
+          "command": "deno",
+          "arguments": ["fmt", "--ext=css", "-"]
+        }
+      }
+    },
+    "SCSS": {
+      "formatter": {
+        "external": {
+          "command": "deno",
+          "arguments": ["fmt", "--ext=scss", "-"]
+        }
+      }
+    }
+  },
+  "format_on_save": "on"
+}

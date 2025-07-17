@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/denoland/deno/refs/heads/main/cli/schemas/config-file.v1.json",
+  "tasks": {
+    "build": "deno --allow-read --allow-write --allow-env --v8-flags=--max-old-space-size=8192,--max-heap-size=8192 index.tsx"
+  },
+  "imports": {
+    "hono": "npm:hono@^4.8.5",
+    "sass": "npm:sass@^1.89.2"
+  },
+  "compilerOptions": {
+    "jsx": "precompile",
+    "jsxImportSource": "hono/jsx"
+  },
+  "fmt": {
+    "indentWidth": 2,
+    "lineWidth": 160,
+    "proseWrap": "preserve",
+    "semiColons": true,
+    "singleQuote": true,
+    "useTabs": false
+  },
+  "lint": {
+    "rules": {
+      "exclude": ["jsx-key"]
+    }
+  },
+  "nodeModulesDir": "auto"
+}
