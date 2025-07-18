@@ -6,135 +6,157 @@ from torch.utils.data import DataLoader
 import json
 from collections import OrderedDict
 
-# 1. Define hyperparameters
-# ---------------------------------
-device = torch.device(
-    'cuda' if torch.cuda.is_available() else 'cpu'
-)  # Check if GPU is available
-input_size = 784  # Size after flattening 28x28 image
-hidden_size = 2  # Hidden layer size
-num_classes = 10  # Number of output classes (0-9)
-num_epochs = 5  # Total number of training epochs
-batch_size = 100  # Batch size for training
-learning_rate = 0.001  # Learning rate
 
-# 2. Prepare MNIST dataset
-# ---------------------------------
-# Use torchvision.transforms to transform images
-# ToTensor() converts PIL Image or numpy.ndarray to FloatTensor and scales pixel values from [0, 255] to [0.0, 1.0]
+# 1. Configuration
+
+# --- Training hyperparameters ---
+NUM_EPOCHS = 5
+BATCH_SIZE = 100
+LEARNING_RATE = 0.001
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+# --- Neural Network parameters ---
+INPUT_SIZE = 28 * 28  # Each MNIST image is 28x28 pixels
+NUM_CLASSES = 10  # Number of output classes (digits 0-9)
+
+
+# 2. Prepare MNIST Dataset
+
+# Image transformation pipeline (flatten images)
 transform = transforms.Compose(
     [
         transforms.ToTensor(),
-        transforms.Normalize(
-            (0.1307,), (0.3081,)
-        ),  # Normalize tensor (using global mean and std of MNIST)
+        # transforms.Normalize((0.1307,), (0.3081,)),  # Global mean and std for MNIST
+        transforms.Lambda(lambda x: (x > 0.5).float()),  # Binarize pixels to 0 or 1
+        transforms.Lambda(lambda x: x.view(-1)),  # Flatten the image to 784-dim vector
     ]
 )
 
-# Download and load training dataset
+# Download and load datasets
 train_dataset = torchvision.datasets.MNIST(
     root='./data', train=True, transform=transform, download=True
 )
-
-# Download and load test dataset
 test_dataset = torchvision.datasets.MNIST(
     root='./data', train=False, transform=transform
 )
 
 # Create data loaders
-# DataLoader helps with batching, shuffling, and parallel data loading
-train_loader = DataLoader(
-    dataset=train_dataset, batch_size=batch_size, shuffle=True
-)  # shuffle=True means shuffle data at the start of each epoch
-
-test_loader = DataLoader(
-    dataset=test_dataset, batch_size=batch_size, shuffle=False
-)  # Shuffling is usually not needed for testing
+train_loader = DataLoader(dataset=train_dataset, batch_size=BATCH_SIZE, shuffle=True)
+test_loader = DataLoader(dataset=test_dataset, batch_size=BATCH_SIZE, shuffle=False)
 
 
-# 3. Define neural network model
-# ---------------------------------
-class NeuralNet(nn.Module):
-    def __init__(self, input_size, hidden_size, num_classes):
-        super(NeuralNet, self).__init__()
-        # First layer
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        # Activation function
-        self.relu = nn.ReLU()
-        # Second layer
-        self.fc2 = nn.Linear(hidden_size, num_classes)
+# 3. Define Neural Network
+
+
+class SimpleNN(nn.Module):
+    def __init__(self):
+        super(SimpleNN, self).__init__()
+        self.fc = nn.Linear(INPUT_SIZE, NUM_CLASSES)
 
     def forward(self, x):
-        # Original shape of x: [batch_size, 1, 28, 28]
-        # Need to flatten to [batch_size, 784]
-        x = x.reshape(-1, input_size)
-
-        # Pass through first layer and activation
-        out = self.fc1(x)
-        out = self.relu(out)
-        # Pass through second layer to get final output (logits)
-        out = self.fc2(out)
+        # x shape: [batch_size, 784]
+        out = self.fc(x)
         return out
 
 
-# 4. Create model, loss function, and optimizer
-# ---------------------------------
-model = NeuralNet(input_size, hidden_size, num_classes).to(device)
+# 4. Create Model, Loss, Optimizer
 
-# Define loss function
-# CrossEntropyLoss includes Softmax, so no need to add Softmax in model output
+print(f'Using device: {DEVICE}')
+model = SimpleNN().to(DEVICE)
+print('\nModel architecture:')
+print(model)
+
+# Print total number of trainable parameters
+total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+print(f'\nTotal number of parameters: {total_params:,}')
+
+# Define loss function (CrossEntropyLoss includes Softmax)
 criterion = nn.CrossEntropyLoss()
 
 # Define optimizer
-# Adam is a commonly used and effective optimizer
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+optimizer = torch.optim.Adam(model.parameters(), lr=LEARNING_RATE)
 
-# 5. Train the model
-# ---------------------------------
+
+# 5. Train Model
+
 total_steps = len(train_loader)
-print(
-    f'Starting training... {num_epochs} epochs in total, {total_steps} steps per epoch.'
-)
+print(f'\nStart training... {NUM_EPOCHS} epochs, {total_steps} steps per epoch.')
 
-for epoch in range(num_epochs):
+for epoch in range(NUM_EPOCHS):
     running_loss = 0.0
     for i, (images, labels) in enumerate(train_loader):
-        # Move data to device (CPU or GPU)
-        # images shape: [100, 1, 28, 28] -> [100, 784]
-        images = images.to(device)
-        labels = labels.to(device)
+        images = images.to(DEVICE)
+        labels = labels.to(DEVICE)
 
         # Forward pass
         outputs = model(images)
         loss = criterion(outputs, labels)
 
         # Backward and optimize
-        optimizer.zero_grad()  # Clear previous gradients
-        loss.backward()  # Compute gradients
-        optimizer.step()  # Update weights
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
 
         running_loss += loss.item()
         if (i + 1) % 100 == 0:
             avg_loss = running_loss / 100
             print(
-                f'Epoch [{epoch + 1}/{num_epochs}], Step [{i + 1}/{total_steps}], Average Loss: {avg_loss:.4f}'
+                f'Epoch [{epoch + 1}/{NUM_EPOCHS}], Step [{i + 1}/{total_steps}], Avg Loss: {avg_loss:.4f}'
             )
             running_loss = 0.0
 
+print('Training finished!')
 
-print('Training complete!')
+# Print model output for all-zero input
+model.eval()
+with torch.no_grad():
+    zero_input = torch.zeros(1, INPUT_SIZE).to(DEVICE)
+    zero_output = model(zero_input)
+    print('\nModel output (logits) for all-zero input:')
+    print(zero_output.cpu().numpy())
 
-# # Save model
-# model_path = 'mnist_model.pth'
-# torch.save(
-#     {
-#         'model_state_dict': model.state_dict(),
-#         'optimizer_state_dict': optimizer.state_dict(),
-#         'epoch': num_epochs,
-#     },
-#     model_path,
-# )
-# print(f'Model saved to {model_path}')
+# Print model output for all-one input
+model.eval()
+with torch.no_grad():
+    one_input = torch.ones(1, INPUT_SIZE).to(DEVICE)
+    one_output = model(one_input)
+    print('\nModel output (logits) for all-one input:')
+    print(one_output.cpu().numpy())
+
+# Print model output for half-one input
+model.eval()
+with torch.no_grad():
+    half_one_input = torch.zeros(1, INPUT_SIZE).to(DEVICE)
+    half_one_input[:, :INPUT_SIZE // 2] = 1.0
+    half_one_output = model(half_one_input)
+    print('\nModel output (logits) for half-one input:')
+    print(half_one_output.cpu().numpy())
+
+# 6. Evaluate and Save Model
+
+model.eval()  # Set to evaluation mode
+with torch.no_grad():
+    correct = 0
+    total = 0
+    sample_logits_printed = False
+    for images, labels in test_loader:
+        images = images.to(DEVICE)
+        labels = labels.to(DEVICE)
+        outputs = model(images)
+        _, predicted = torch.max(outputs.data, 1)
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+
+        # Print sample raw logits (before softmax)
+        if not sample_logits_printed:
+            print('\nSample test data raw logits:')
+            print(outputs[0].cpu().numpy())
+            print(f'True label: {labels[0].item()}')
+            sample_logits_printed = True
+
+    accuracy = 100 * correct / total
+    print(f'\nTest accuracy on 10000 images: {accuracy:.2f} %')
+
 
 # Get weights dictionary
 weights_dict = model.state_dict()
@@ -149,31 +171,3 @@ with open('mnist_model_weights.json', 'w') as f:
     json.dump(json_dict, f, indent=4)
 
 print('Model weights successfully written to mnist_model_weights.json')
-
-# 6. Evaluate model accuracy
-# ---------------------------------
-# Set model to evaluation mode
-# This disables layers like Dropout and BatchNorm used only during training
-model.eval()
-
-# No need to compute gradients during evaluation to save resources
-with torch.no_grad():
-    correct = 0
-    total = 0
-    for images, labels in test_loader:
-        images = images.to(device)
-        labels = labels.to(device)
-        outputs = model(images)
-
-        # torch.max returns (max value, index of max value)
-        # We only need the index, which is the predicted class
-        _, predicted = torch.max(outputs.data, 1)
-
-        total += labels.size(0)
-        correct += (predicted == labels).sum().item()
-
-    accuracy = 100 * correct / total
-    print(f'Accuracy of the model on 10000 test images: {accuracy:.2f} %')
-
-# Switch model back to training mode
-model.train()
