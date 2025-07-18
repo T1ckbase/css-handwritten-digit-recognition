@@ -71,10 +71,11 @@ body {
     var(--out-2-integer-part) o2d var(--out-2-decimal-part) o3i var(--out-3-integer-part) o3d var(--out-3-decimal-part) o4i var(--out-4-integer-part) o4d
     var(--out-4-decimal-part) o5i var(--out-5-integer-part) o5d var(--out-5-decimal-part) o6i var(--out-6-integer-part) o6d var(--out-6-decimal-part) o7i
     var(--out-7-integer-part) o7d var(--out-7-decimal-part) o8i var(--out-8-integer-part) o8d var(--out-8-decimal-part) o9i var(--out-9-integer-part) o9d
-    var(--out-9-decimal-part) i0 var(--in-0);
+    var(--out-9-decimal-part) i0 var(--in-0) conv-pre-0-0-i var(--conv-pre-0-0-integer-part) conv-pre-0-0-d var(--conv-pre-0-0-decimal-part);
   content: '\A 0: ' counter(o0i) '.' counter(o0d) '\A 1: ' counter(o1i) '.' counter(o1d) '\A 2: ' counter(o2i) '.' counter(o2d) '\A 3: ' counter(o3i) '.'
     counter(o3d) '\A 4: ' counter(o4i) '.' counter(o4d) '\A 5: ' counter(o5i) '.' counter(o5d) '\A 6: ' counter(o6i) '.' counter(o6d) '\A 7: ' counter(o7i) '.'
-    counter(o7d) '\A 8: ' counter(o8i) '.' counter(o8d) '\A 9: ' counter(o9i) '.' counter(o9d) '\A input-0: ' counter(i0);
+    counter(o7d) '\A 8: ' counter(o8i) '.' counter(o8d) '\A 9: ' counter(o9i) '.' counter(o9d) '\A input-0: ' counter(i0) '\A --conv-pre-0-0: '
+    counter(conv-pre-0-0-i) '.' counter(conv-pre-0-0-d);
   white-space: pre-wrap;
   --out-0-integer-part: calc(round(to-zero, var(--out-0)));
   --out-0-decimal-part: calc(round(calc((abs(var(--out-0)) - abs(var(--out-0-integer-part))) * 100)));
@@ -96,4 +97,12 @@ body {
   --out-8-decimal-part: calc(round(calc((abs(var(--out-8)) - abs(var(--out-8-integer-part))) * 100)));
   --out-9-integer-part: calc(round(to-zero, var(--out-9)));
   --out-9-decimal-part: calc(round(calc((abs(var(--out-9)) - abs(var(--out-9-integer-part))) * 100)));
+  --conv-pre-0-0-integer-part: calc(round(to-zero, var(--conv-pre-0-0)));
+  --conv-pre-0-0-decimal-part: calc(round(calc((abs(var(--conv-pre-0-0)) - abs(var(--conv-pre-0-0-integer-part))) * 100)));
+}
+
+.test::after {
+  counter-reset: i0 var(--in-0);
+  content: '\A --in-0: ' counter(i0);
+  white-space: pre-wrap;
 }
