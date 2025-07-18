@@ -1,4 +1,7 @@
 @use 'sass:list';
+@use 'sass:map';
+@use 'sass:string';
+@use './functions' as f;
 
 $input-size: 28 * 28;
 
@@ -27,16 +30,15 @@ body {
 .cell {
   width: var(--cell-size);
   height: var(--cell-size);
-  /* background-color: #1f2f2f; */
-  /* transition: background-color 1000s 1000s; */
 }
 
 .grid {
   --cell-size: 10px;
+  padding: 0;
+  margin-bottom: 0.75rem;
   display: flex;
   flex-wrap: wrap;
-  border: 1px solid #ccc;
-  padding: 5px;
+  border: 2px solid dimgray;
   user-select: none;
   cursor: crosshair;
 }
@@ -66,43 +68,51 @@ body {
   }
 }
 
-.debug::after {
-  counter-reset: o0i var(--out-0-integer-part) o0d var(--out-0-decimal-part) o1i var(--out-1-integer-part) o1d var(--out-1-decimal-part) o2i
-    var(--out-2-integer-part) o2d var(--out-2-decimal-part) o3i var(--out-3-integer-part) o3d var(--out-3-decimal-part) o4i var(--out-4-integer-part) o4d
-    var(--out-4-decimal-part) o5i var(--out-5-integer-part) o5d var(--out-5-decimal-part) o6i var(--out-6-integer-part) o6d var(--out-6-decimal-part) o7i
-    var(--out-7-integer-part) o7d var(--out-7-decimal-part) o8i var(--out-8-integer-part) o8d var(--out-8-decimal-part) o9i var(--out-9-integer-part) o9d
-    var(--out-9-decimal-part) i0 var(--in-0) conv-pre-0-0-i var(--conv-pre-0-0-integer-part) conv-pre-0-0-d var(--conv-pre-0-0-decimal-part);
-  content: '\A 0: ' counter(o0i) '.' counter(o0d) '\A 1: ' counter(o1i) '.' counter(o1d) '\A 2: ' counter(o2i) '.' counter(o2d) '\A 3: ' counter(o3i) '.'
-    counter(o3d) '\A 4: ' counter(o4i) '.' counter(o4d) '\A 5: ' counter(o5i) '.' counter(o5d) '\A 6: ' counter(o6i) '.' counter(o6d) '\A 7: ' counter(o7i) '.'
-    counter(o7d) '\A 8: ' counter(o8i) '.' counter(o8d) '\A 9: ' counter(o9i) '.' counter(o9d) '\A input-0: ' counter(i0) '\A --conv-pre-0-0: '
-    counter(conv-pre-0-0-i) '.' counter(conv-pre-0-0-d);
-  white-space: pre-wrap;
-  --out-0-integer-part: calc(round(to-zero, var(--out-0)));
-  --out-0-decimal-part: calc(round(calc((abs(var(--out-0)) - abs(var(--out-0-integer-part))) * 100)));
-  --out-1-integer-part: calc(round(to-zero, var(--out-1)));
-  --out-1-decimal-part: calc(round(calc((abs(var(--out-1)) - abs(var(--out-1-integer-part))) * 100)));
-  --out-2-integer-part: calc(round(to-zero, var(--out-2)));
-  --out-2-decimal-part: calc(round(calc((abs(var(--out-2)) - abs(var(--out-2-integer-part))) * 100)));
-  --out-3-integer-part: calc(round(to-zero, var(--out-3)));
-  --out-3-decimal-part: calc(round(calc((abs(var(--out-3)) - abs(var(--out-3-integer-part))) * 100)));
-  --out-4-integer-part: calc(round(to-zero, var(--out-4)));
-  --out-4-decimal-part: calc(round(calc((abs(var(--out-4)) - abs(var(--out-4-integer-part))) * 100)));
-  --out-5-integer-part: calc(round(to-zero, var(--out-5)));
-  --out-5-decimal-part: calc(round(calc((abs(var(--out-5)) - abs(var(--out-5-integer-part))) * 100)));
-  --out-6-integer-part: calc(round(to-zero, var(--out-6)));
-  --out-6-decimal-part: calc(round(calc((abs(var(--out-6)) - abs(var(--out-6-integer-part))) * 100)));
-  --out-7-integer-part: calc(round(to-zero, var(--out-7)));
-  --out-7-decimal-part: calc(round(calc((abs(var(--out-7)) - abs(var(--out-7-integer-part))) * 100)));
-  --out-8-integer-part: calc(round(to-zero, var(--out-8)));
-  --out-8-decimal-part: calc(round(calc((abs(var(--out-8)) - abs(var(--out-8-integer-part))) * 100)));
-  --out-9-integer-part: calc(round(to-zero, var(--out-9)));
-  --out-9-decimal-part: calc(round(calc((abs(var(--out-9)) - abs(var(--out-9-integer-part))) * 100)));
-  --conv-pre-0-0-integer-part: calc(round(to-zero, var(--conv-pre-0-0)));
-  --conv-pre-0-0-decimal-part: calc(round(calc((abs(var(--conv-pre-0-0)) - abs(var(--conv-pre-0-0-integer-part))) * 100)));
+.clear {
+  margin-bottom: 0.75rem;
 }
 
-.test::after {
-  counter-reset: i0 var(--in-0);
-  content: '\A --in-0: ' counter(i0);
+:root:has(.clear:active) {
+  transition: none;
+}
+
+@property --prediction {
+  syntax: '<number>';
+  inherits: true;
+  initial-value: 0;
+}
+
+.debug::after {
+  $counter-resets: ();
+  $contents: ();
+  @for $i from 0 to 10 {
+    $foo: f.split-number(--out-#{$i}, 5);
+    @include f.apply-vars(map.get($foo, 'variables'));
+    $counter-resets: list.append($counter-resets, map.get($foo, 'counter-reset'));
+    $contents: list.append($contents, '\A --out-#{$i}: ' map.get($foo, 'content'));
+  }
+
+  $outs: ();
+  @for $i from 0 to 10 {
+    $outs: list.append($outs, var(--out-#{$i}), $separator: comma);
+  }
+  --max-value: max(#{$outs});
+  $expression: '';
+  @for $i from 0 to 10 {
+    --is-max-#{$i}: calc(1 - clamp(0, (var(--max-value) - var(--out-#{$i}) - 0.000001) * infinity, 1));
+    $expression: $expression + '(var(--is-max-#{$i}) * #{$i})';
+    @if $i < 9 {
+      $expression: $expression + ' + ';
+    }
+  }
+  --prediction: calc(#{$expression});
+  counter-reset: $counter-resets prediction var(--prediction);
+  content: $contents '\A prediction: ' counter(prediction);
   white-space: pre-wrap;
 }
+
+// .test::after {
+//   counter-reset: i0 var(--in-0);
+//   content: '\A --in-0: ' counter(i0);
+//   white-space: pre-wrap;
+// }

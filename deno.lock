@@ -2,7 +2,7 @@
   "version": "5",
   "specifiers": {
     "npm:hono@^4.8.5": "4.8.5",
-    "npm:sass@^1.89.2": "1.89.2"
+    "npm:sass@*": "1.89.2"
   },
   "npm": {
     "@parcel/watcher-android-arm64@2.5.1": {
@@ -175,8 +175,7 @@
   },
   "workspace": {
     "dependencies": [
-      "npm:hono@^4.8.5",
-      "npm:sass@^1.89.2"
+      "npm:hono@^4.8.5"
     ]
   }
 }

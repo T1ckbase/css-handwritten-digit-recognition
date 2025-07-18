@@ -25,16 +25,16 @@ NUM_CLASSES = 10  # Number of output classes (0-9)
 
 # Convolutional Layer Parameters
 CONV_OUT_CHANNELS = 1  # Number of output channels (number of filters)
-CONV_KERNEL_SIZE = 3  # 5  # Size of convolution kernel (filter)
+CONV_KERNEL_SIZE = 5  # 5  # Size of convolution kernel (filter)
 CONV_STRIDE = 1  # Stride of convolution kernel
 CONV_PADDING = (
-    1  # 2  # Number of padding around the image (2 = 'same' padding for 5x5 kernel)
+    2  # 2  # Number of padding around the image (2 = 'same' padding for 5x5 kernel)
 )
 
 
 # Pooling Layer Parameters
-POOL_KERNEL_SIZE = 4  # Size of pooling kernel
-POOL_STRIDE = 4  # Stride of pooling kernel
+POOL_KERNEL_SIZE = 2  # Size of pooling kernel
+POOL_STRIDE = 2  # Stride of pooling kernel
 
 # ===================================================================
 #                      2. Prepare MNIST Dataset
@@ -44,7 +44,8 @@ POOL_STRIDE = 4  # Stride of pooling kernel
 transform = transforms.Compose(
     [
         transforms.ToTensor(),
-        transforms.Normalize((0.1307,), (0.3081,)),  # MNIST global mean and std
+        # transforms.Normalize((0.1307,), (0.3081,)),  # MNIST global mean and std
+        transforms.Lambda(lambda x: (x > 0.5).float()),  # Binarize pixels to 0 or 1
     ]
 )
 
@@ -170,6 +171,31 @@ for epoch in range(NUM_EPOCHS):
 
 print('Training complete!')
 
+# Print model output for all-zero input
+model.eval()
+with torch.no_grad():
+    zero_input = torch.zeros(1, IN_CHANNELS, IMG_HEIGHT, IMG_WIDTH).to(DEVICE)
+    zero_output = model(zero_input)
+    print('\nModel output (logits) for all-zero input:')
+    print(zero_output.cpu().numpy())
+
+# Print model output for all-one input
+model.eval()
+with torch.no_grad():
+    one_input = torch.ones(1, IN_CHANNELS, IMG_HEIGHT, IMG_WIDTH).to(DEVICE)
+    one_output = model(one_input)
+    print('\nModel output (logits) for all-one input:')
+    print(one_output.cpu().numpy())
+
+# Print model output for half-one input
+model.eval()
+with torch.no_grad():
+    half_one_input = torch.zeros(1, IN_CHANNELS, IMG_HEIGHT, IMG_WIDTH).to(DEVICE)
+    half_one_input[:, :, : IMG_HEIGHT // 2, :] = 1.0  # Set top half of image to 1
+    half_one_output = model(half_one_input)
+    print('\nModel output (logits) for half-one input:')
+    print(half_one_output.cpu().numpy())
+
 # ===================================================================
 #                 6. Evaluate Model and Save Weights
 # ===================================================================
@@ -179,6 +205,9 @@ model.eval()  # Switch to evaluation mode
 with torch.no_grad():
     correct = 0
     total = 0
+    class_correct = list(0.0 for i in range(NUM_CLASSES))
+    class_total = list(0.0 for i in range(NUM_CLASSES))
+
     for images, labels in test_loader:
         images = images.to(DEVICE)
         labels = labels.to(DEVICE)
@@ -187,8 +216,26 @@ with torch.no_grad():
         total += labels.size(0)
         correct += (predicted == labels).sum().item()
 
+        # Calculate accuracy for each class
+        c = (predicted == labels).squeeze()
+        for i in range(labels.size(0)):
+            label = labels[i]
+            class_correct[label] += c[i].item()
+            class_total[label] += 1
+
     accuracy = 100 * correct / total
     print(f'\nAccuracy of the model on 10000 test images: {accuracy:.2f} %')
+
+    # Print accuracy for each class
+    print('\nAccuracy for each digit:')
+    for i in range(NUM_CLASSES):
+        if class_total[i] > 0:
+            class_accuracy = 100 * class_correct[i] / class_total[i]
+            print(
+                f'    Digit {i}: {class_accuracy:.2f} % ({int(class_correct[i])}/{int(class_total[i])})'
+            )
+        else:
+            print(f'    Digit {i}: No test samples')
 
 # --- Save weights to JSON file ---
 weights_dict = model.state_dict()
@@ -199,7 +246,7 @@ for key, tensor in weights_dict.items():
     json_dict[key] = tensor.cpu().numpy().tolist()
 
 # Write to JSON file
-json_filename = 'mnist_weights.json'
+json_filename = 'mnist_model_weights.json'
 with open(json_filename, 'w') as f:
     json.dump(json_dict, f, indent=2)
 

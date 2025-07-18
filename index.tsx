@@ -1,5 +1,4 @@
 import type { FC } from 'hono/jsx';
-import * as sass from 'sass';
 
 const width = 28;
 const height = 28;
@@ -92,7 +91,7 @@ async function generateCnnCss(jsonPath: string, cssPath: string): Promise<void> 
           }
           const bias = weights['conv_layer.0.bias'][c_out];
           const outputPixelIndex = y * convOutW + x;
-          // cssContent.push(`@property --conv-pre-${c_out}-${outputPixelIndex} { syntax: "<number>"; inherits: true; initial-value: 0; }`);
+          cssContent.push(`@property --conv-pre-${c_out}-${outputPixelIndex} { syntax: "<number>"; inherits: true; initial-value: 0; }`);
           cssContent.push(`:root { --conv-pre-${c_out}-${outputPixelIndex}: calc(${terms.join(' + ')} + ${bias}); }`);
         }
       }
@@ -102,7 +101,7 @@ async function generateCnnCss(jsonPath: string, cssPath: string): Promise<void> 
     cssContent.push(`\n/* 3. RELU ACTIVATION */`);
     for (let c = 0; c < outChannels; c++) {
       for (let i = 0; i < convOutH * convOutW; i++) {
-        // cssContent.push(`@property --conv-out-${c}-${i} { syntax: "<number>"; inherits: true; initial-value: 0; }`);
+        cssContent.push(`@property --conv-out-${c}-${i} { syntax: "<number>"; inherits: true; initial-value: 0; }`);
         cssContent.push(`:root { --conv-out-${c}-${i}: max(0, var(--conv-pre-${c}-${i})); }`);
       }
     }
@@ -123,7 +122,7 @@ async function generateCnnCss(jsonPath: string, cssPath: string): Promise<void> 
             }
           }
           const outputPixelIndex = y * poolOutW + x;
-          // cssContent.push(`@property --pool-out-${c}-${outputPixelIndex} { syntax: "<number>"; inherits: true; initial-value: 0; }`);
+          cssContent.push(`@property --pool-out-${c}-${outputPixelIndex} { syntax: "<number>"; inherits: true; initial-value: 0; }`);
           cssContent.push(`:root { --pool-out-${c}-${outputPixelIndex}: max(${terms.join(', ')}); }`);
         }
       }
@@ -143,30 +142,30 @@ async function generateCnnCss(jsonPath: string, cssPath: string): Promise<void> 
         return `${flattenedVars[j]} * ${weight}`;
       });
       const bias = weights['fc_layer.bias'][i];
-      // cssContent.push(`@property --logit-${i} { syntax: "<number>"; inherits: true; initial-value: 0; }`);
-      // cssContent.push(`:root { --logit-${i}: calc(${fcTerms.join(' + ')} + ${bias}); }`);
+      cssContent.push(`@property --logit-${i} { syntax: "<number>"; inherits: true; initial-value: 0; }`);
+      cssContent.push(`:root { --logit-${i}: calc(${fcTerms.join(' + ')} + ${bias}); }`);
       // cssContent.push(`@property --out-${i} { syntax: "<number>"; inherits: true; initial-value: 0; }`);
-      cssContent.push(`:root { --out-${i}: calc(${fcTerms.join(' + ')} + ${bias}); }`);
+      // cssContent.push(`:root { --out-${i}: calc(${fcTerms.join(' + ')} + ${bias}); }`);
     }
 
-    // // --- 6. SOFTMAX ACTIVATION ---
-    // cssContent.push(`\n/* 6. SOFTMAX ACTIVATION */`);
-    // cssContent.push(`/* 6a. Exponentiate logits */`);
-    // for (let i = 0; i < outputSize; i++) {
-    //   cssContent.push(`@property --exp-${i} { syntax: "<number>"; inherits: true; initial-value: 0; }`);
-    //   cssContent.push(`:root { --exp-${i}: exp(var(--logit-${i})); }`);
-    // }
+    // --- 6. SOFTMAX ACTIVATION ---
+    cssContent.push(`\n/* 6. SOFTMAX ACTIVATION */`);
+    cssContent.push(`/* 6a. Exponentiate logits */`);
+    for (let i = 0; i < outputSize; i++) {
+      cssContent.push(`@property --exp-${i} { syntax: "<number>"; inherits: true; initial-value: 0; }`);
+      cssContent.push(`:root { --exp-${i}: exp(var(--logit-${i})); }`);
+    }
 
-    // cssContent.push(`\n/* 6b. Sum of exponentiated logits */`);
-    // const expVars = Array.from({ length: outputSize }, (_, i) => `var(--exp-${i})`);
-    // cssContent.push(`@property --exp-sum { syntax: "<number>"; inherits: true; initial-value: 0; }`);
-    // cssContent.push(`:root { --exp-sum: calc(${expVars.join(' + ')}); }`);
+    cssContent.push(`\n/* 6b. Sum of exponentiated logits */`);
+    const expVars = Array.from({ length: outputSize }, (_, i) => `var(--exp-${i})`);
+    cssContent.push(`@property --exp-sum { syntax: "<number>"; inherits: true; initial-value: 0; }`);
+    cssContent.push(`:root { --exp-sum: calc(${expVars.join(' + ')}); }`);
 
-    // cssContent.push(`\n/* 6c. Final Probabilities */`);
-    // for (let i = 0; i < outputSize; i++) {
-    //   cssContent.push(`@property --out-${i} { syntax: "<number>"; inherits: true; initial-value: 0; }`);
-    //   cssContent.push(`:root { --out-${i}: calc(var(--exp-${i}) / var(--exp-sum)); }`);
-    // }
+    cssContent.push(`\n/* 6c. Final Probabilities */`);
+    for (let i = 0; i < outputSize; i++) {
+      cssContent.push(`@property --out-${i} { syntax: "<number>"; inherits: true; initial-value: 0; }`);
+      cssContent.push(`:root { --out-${i}: calc(var(--exp-${i}) / var(--exp-sum)); }`);
+    }
 
     await Deno.writeTextFile(cssPath, cssContent.join('\n'));
   } catch (error) {
@@ -178,51 +177,31 @@ async function generateCnnCss(jsonPath: string, cssPath: string): Promise<void> 
   }
 }
 
-await generateCnnCss('./mnist_weights.json', 'model.css');
-Deno.exit();
-
-const Layout: FC = (props) => {
-  return (
-    <html lang='en'>
-      <head>
-        <meta charset='UTF-8' />
-        <meta name='viewport' content='width=device-width, initial-scale=1.0' />
-        <meta name='color-scheme' content='dark' />
-        <title>Pure CSS Handwritten Digit Recognition</title>
-        <link rel='stylesheet' href='./model.css' />
-        <link rel='stylesheet' href='./main.css' />
-      </head>
-      <body>{props.children}</body>
-    </html>
-  );
-};
+await generateCnnCss('./mnist_model_weights.json', 'model.css');
 
 const Grid: FC<{ width: number; height: number }> = ({ width, height }) => {
   const cells = Array.from({ length: width * height }, (_, i) => <div class={`cell cell-${i}`}></div>);
   return <div class='grid' style={{ width: `calc(var(--cell-size) * ${width})` }}>{cells}</div>;
 };
 
-const App: FC = (props) => {
-  return (
-    <>
-      {/* {Array.from({ length: 10000 }, (_, i) => <div>hello world</div>)} */}
-      <Grid width={width} height={height} />
-      {/* <div class='mandelbrot-set'></div> */}
-      {/* <NestedDiv className='line' count={maxIterations} /> */}
-      <div class='debug'>debug:</div>
-      {/* <div class='test'>test:</div> */}
-    </>
-  );
-};
-
 const jsxElement = (
-  <Layout>
-    <App />
-  </Layout>
+  <html lang='en'>
+    <head>
+      <meta charset='UTF-8' />
+      <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+      <meta name='color-scheme' content='dark' />
+      <title>Pure CSS Handwritten Digit Recognition</title>
+      <link rel='stylesheet' href='./model.css' />
+      <link rel='stylesheet' href='./main.css' />
+    </head>
+    <body>
+      <Grid width={width} height={height} />
+      <button type='button' class='clear'>clear</button>
+      <div class='debug'>debug:</div>
+      {/* <div class='debug1'></div> */}
+      {/* <div class='test'></div> */}
+    </body>
+  </html>
 );
 const html = `<!DOCTYPE html>${jsxElement.toString()}`;
 await Deno.writeTextFile('./index.html', html);
-
-const scssContent = await Deno.readTextFile('main.scss');
-const { css } = sass.compileString(scssContent /* , { style: 'compressed' } */);
-await Deno.writeTextFile('./main.css', css);

@@ -1,11 +1,11 @@
 {
   "$schema": "https://raw.githubusercontent.com/denoland/deno/refs/heads/main/cli/schemas/config-file.v1.json",
   "tasks": {
-    "build": "deno --allow-read --allow-write --allow-env --v8-flags=--max-old-space-size=8192,--max-heap-size=8192 index.tsx"
+    "build": "deno --allow-read --allow-write --allow-env index.tsx",
+    "build:css": "deno run -A npm:sass main.scss main.css --no-source-map --style=compressed"
   },
   "imports": {
-    "hono": "npm:hono@^4.8.5",
-    "sass": "npm:sass@^1.89.2"
+    "hono": "npm:hono@^4.8.5"
   },
   "compilerOptions": {
     "jsx": "precompile",
@@ -23,6 +23,5 @@
     "rules": {
       "exclude": ["jsx-key"]
     }
-  },
-  "nodeModulesDir": "auto"
+  }
 }

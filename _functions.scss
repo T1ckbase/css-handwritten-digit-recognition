@@ -1,0 +1,71 @@
+@use 'sass:math';
+@use 'sass:map';
+@use 'sass:string';
+
+@function split-number($number-var, $precision) {
+  $var-name: string.slice($number-var, 3);
+  $var-prefix: '--#{$var-name}';
+
+  $variables: ();
+
+  $abs: '#{$var-prefix}-abs';
+  $integer-part-abs: '#{$var-prefix}-integer-part-abs';
+  $decimal-as-integer: '#{$var-prefix}-decimal-as-integer';
+
+  $variables: map.merge(
+    $variables,
+    (
+      '#{$abs}': 'abs(var(#{$number-var}))',
+      '#{$integer-part-abs}': 'round(to-zero, var(#{$abs}))',
+      '#{$decimal-as-integer}': 'round((var(#{$abs}) - var(#{$integer-part-abs})) * #{math.pow(10, $precision)})',
+    )
+  );
+
+  @for $i from 1 through $precision {
+    $power: $precision - $i;
+    $divisor: math.pow(10, $power);
+    $digit-var: '#{$var-prefix}-digit-#{$i}';
+
+    $temp-val: 'var(#{$decimal-as-integer})';
+    @if $i > 1 {
+      @for $j from 1 to $i {
+        $prev-digit-var: '#{$var-prefix}-digit-#{$j}';
+        $prev-power: $precision - $j;
+        $prev-multiplier: math.pow(10, $prev-power);
+        $temp-val: '(#{$temp-val} - var(#{$prev-digit-var}) * #{$prev-multiplier})';
+      }
+    }
+
+    $current-digit-calc: 'round(to-zero, (#{$temp-val}) / #{$divisor})';
+    $variables: map.merge($variables, ('#{$digit-var}': $current-digit-calc));
+  }
+
+  $counter-reset-string: '';
+  $integer-counter-name: '#{$var-name}-int';
+  $counter-reset-string: '#{$integer-counter-name} round(to-zero, var(#{$number-var}))';
+
+  @for $i from 1 through $precision {
+    $digit-var: '#{$var-prefix}-digit-#{$i}';
+    $decimal-counter-name: '#{$var-name}-dec-#{$i}';
+    $counter-reset-string: '#{$counter-reset-string} #{$decimal-counter-name} var(#{$digit-var})';
+  }
+
+  $content-string: "counter(#{$integer-counter-name}) '.'";
+
+  @for $i from 1 through $precision {
+    $decimal-counter-name: '#{$var-name}-dec-#{$i}';
+    $content-string: '#{$content-string} counter(#{$decimal-counter-name})';
+  }
+
+  @return (
+    'variables': $variables,
+    'counter-reset': string.unquote($counter-reset-string),
+    'content': string.unquote($content-string),
+  );
+}
+
+@mixin apply-vars($map) {
+  @each $key, $value in $map {
+    #{$key}: #{$value};
+  }
+}
