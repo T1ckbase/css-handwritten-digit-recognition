@@ -190,11 +190,14 @@ const jsxElement = (
       <meta charset='UTF-8' />
       <meta name='viewport' content='width=device-width, initial-scale=1.0' />
       <meta name='color-scheme' content='dark' />
-      <title>Pure CSS Handwritten Digit Recognition</title>
+      <meta name='description' content='Pure CSS implementation of a CNN for MNIST digit recognition' />
+      <meta name='keywords' content='CSS, machine learning, handwritten digit recognition, neural network, front-end AI, web development, MNIST' />
+      <title>Pure CSS Handwritten Digit Recognition - MNIST</title>
       <link rel='stylesheet' href='./model.css' />
       <link rel='stylesheet' href='./main.css' />
     </head>
     <body>
+      <h1>Pure CSS Handwritten Digit Recognition</h1>
       <Grid width={width} height={height} />
       <button type='button' class='clear'>clear</button>
       <div class='debug'>debug:</div>
