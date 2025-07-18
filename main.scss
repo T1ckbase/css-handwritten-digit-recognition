@@ -23,8 +23,16 @@ $input-size: 28 * 28;
   transition: $transitions;
 }
 
-body {
+* {
   font-family: monospace;
+}
+
+header {
+  margin-bottom: 1rem;
+}
+
+body {
+  margin: 1rem;
 }
 
 .cell {

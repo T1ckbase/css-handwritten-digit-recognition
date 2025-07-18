@@ -197,7 +197,11 @@ const jsxElement = (
       <link rel='stylesheet' href='./main.css' />
     </head>
     <body>
-      <h1>Pure CSS Handwritten Digit Recognition</h1>
+      <header>
+        <h1>Pure CSS Handwritten Digit Recognition</h1>
+        <a href='https://github.com/T1ckbase/css-handwritten-digit-recognition'>GITHUB</a>
+      </header>
+      <div>Draw a digit in the box.</div>
       <Grid width={width} height={height} />
       <button type='button' class='clear'>clear</button>
       <div class='debug'>debug:</div>

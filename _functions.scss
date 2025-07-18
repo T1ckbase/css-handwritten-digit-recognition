@@ -1,3 +1,5 @@
+// Note: This function does not work correctly for numbers between 0 and -1
+// The absolute value approach fails to handle negative decimals properly in this range
 @use 'sass:math';
 @use 'sass:map';
 @use 'sass:string';
